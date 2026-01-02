@@ -8,8 +8,68 @@ on:
       - "**.md"
 
 jobs:
-  build-and-release:
-    name: Build & Release
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            archive_name: chaptify-win-x64.zip
+            use_zip: true
+          - rid: linux-x64
+            archive_name: chaptify-linux-x64.tar.gz
+            use_zip: false
+          - rid: osx-x64
+            archive_name: chaptify-osx-x86_64.tar.gz
+            use_zip: false
+          - rid: osx-arm64
+            archive_name: chaptify-osx-arm64.tar.gz
+            use_zip: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: |
+          dotnet publish ./Chaptify/Chaptify.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o ./out/${{ matrix.rid }}
+
+      - name: Package (Zip)
+        if: matrix.use_zip == true
+        run: |
+          cd ./out/${{ matrix.rid }}
+          zip -r ../../${{ matrix.archive_name }} *
+
+      - name: Package (Tar)
+        if: matrix.use_zip == false
+        run: |
+          cd ./out/${{ matrix.rid }}
+          tar -czvf ../../${{ matrix.archive_name }} *
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: ${{ matrix.archive_name }}
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,10 +80,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
         with:
-          dotnet-version: 10.0.x
+          path: artifacts
+          merge-multiple: true
 
       - name: Generate Release Tag
         id: tag
@@ -31,31 +92,6 @@ jobs:
           # Format: vYYYY.MM.DD-HHmm (e.g., v2024.01.02-1530)
           echo "release_tag=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
 
-      # Windows x64
-      - name: Build Windows
-        run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/win-x64
-          cd ./out/win-x64 && zip -r ../../chaptify-win-x64.zip *
-
-      # Linux x64
-      - name: Build Linux
-        run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/linux-x64
-          cd ./out/linux-x64 && tar -czvf ../../chaptify-linux-x64.tar.gz *
-
-      # macOS x64
-      - name: Build macOS x64
-        run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/osx-x64
-          cd ./out/osx-x64 && tar -czvf ../../chaptify-osx-x86_64.tar.gz *
-
-      # macOS ARM64 (Apple Silicon)
-      - name: Build macOS ARM64
-        run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/osx-arm64
-          cd ./out/osx-arm64 && tar -czvf ../../chaptify-osx-arm64.tar.gz *
-
-      # Create Release
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
@@ -63,7 +99,5 @@ jobs:
           name: Chaptify ${{ steps.tag.outputs.release_tag }}
           body: |
             Automated build from commit ${{ github.sha }}
-          files: |
-            *.zip
-            *.tar.gz
+          files: artifacts/*
           make_latest: true

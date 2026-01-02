@@ -1,7 +1,7 @@
 # Chaptify
 
-![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=dotnet&logoColor=white)
-![Platform](https://img.shields.io/badge/platform-Windows_|_Linux_|_macOS-0078D6?style=flat)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows_|_Linux_|_macOS-0078D6?style=flat)
 
 Tool tách nội dung file .epub ra thành các file .txt riêng lẻ theo chương.
 

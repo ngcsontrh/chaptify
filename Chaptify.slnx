@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+    <File Path="LICENSE.txt" />
+  </Folder>
   <Project Path="Chaptify.Test/Chaptify.Test.csproj" Id="2c1cd45b-7852-441e-ae67-a76f13421f08" />
   <Project Path="Chaptify/Chaptify.csproj" Id="e75779a1-0bcd-45c2-b28d-0ba5dddacaa4" />
 </Solution>

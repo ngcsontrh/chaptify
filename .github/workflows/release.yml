@@ -1,0 +1,67 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+
+jobs:
+  build-and-release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Generate Release Tag
+        id: tag
+        run: |
+          # Format: build-YYYY.MM.DD-HHMMSS (e.g., build-2024.01.02-153000)
+          echo "release_tag=build-$(date +'%Y.%m.%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      # Windows x64
+      - name: Build Windows
+        run: |
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/win-x64
+          cd ./out/win-x64 && zip -r ../../chaptify-win-x64.zip *
+
+      # Linux x64
+      - name: Build Linux
+        run: |
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/linux-x64
+          cd ./out/linux-x64 && tar -czvf ../../chaptify-linux-x64.tar.gz *
+
+      - name: Build macOS x64
+        run: |
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/osx-x64
+          cd ./out/osx-x64 && tar -czvf ../../chaptify-osx-x86_64.tar.gz *
+
+      - name: Build macOS ARM64
+        run: |
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/osx-arm64
+          cd ./out/osx-arm64 && tar -czvf ../../chaptify-osx-arm64.tar.gz *
+
+      # Create Release
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          name: Build ${{ steps.tag.outputs.release_tag }}
+          body: |
+            Automated build from commit ${{ github.sha }}
+          files: |
+            *.zip
+            *.tar.gz
+          make_latest: true

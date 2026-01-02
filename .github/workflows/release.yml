@@ -34,25 +34,25 @@ jobs:
       # Windows x64
       - name: Build Windows
         run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/win-x64
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/win-x64
           cd ./out/win-x64 && zip -r ../../chaptify-win-x64.zip *
 
       # Linux x64
       - name: Build Linux
         run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/linux-x64
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/linux-x64
           cd ./out/linux-x64 && tar -czvf ../../chaptify-linux-x64.tar.gz *
 
       # macOS x64
       - name: Build macOS x64
         run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/osx-x64
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/osx-x64
           cd ./out/osx-x64 && tar -czvf ../../chaptify-osx-x86_64.tar.gz *
 
       # macOS ARM64 (Apple Silicon)
       - name: Build macOS ARM64
         run: |
-          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./out/osx-arm64
+          dotnet publish ./Chaptify/Chaptify.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o ./out/osx-arm64
           cd ./out/osx-arm64 && tar -czvf ../../chaptify-osx-arm64.tar.gz *
 
       # Create Release

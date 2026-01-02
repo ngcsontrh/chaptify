@@ -23,14 +23,17 @@ public static partial class EpubExtractor
         int current = 0;
         int padWidth = Math.Max(3, total.ToString().Length);
 
-        foreach (EpubLocalTextContentFileRef item in readingOrder)
+        for (int i = 0; i < total; i++)
         {
+            EpubLocalTextContentFileRef item = readingOrder[i];
+            double progressPercent = (double)(i + 1) / total * 100;
+
             string filePathKey = GetFilePathWithoutAnchor(item.FilePath);
             string title = GetTitle(item, filePathKey, navigationMap) ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(title))
             {
-                onProgress?.Invoke("Skipped (No Title)", (double)(readingOrder.IndexOf(item) + 1) / total * 100);
+                onProgress?.Invoke("Skipped (No Title)", progressPercent);
                 continue;
             }
 
@@ -39,7 +42,7 @@ public static partial class EpubExtractor
 
             if (plainText.Length < 50)
             {
-                onProgress?.Invoke($"Skipped: {title}", (double)(readingOrder.IndexOf(item) + 1) / total * 100);
+                onProgress?.Invoke($"Skipped: {title}", progressPercent);
                 continue;
             }
 
@@ -50,7 +53,7 @@ public static partial class EpubExtractor
             string outputPath = Path.Combine(outputDir, fileName);
 
             File.WriteAllText(outputPath, plainText, Encoding.UTF8);
-            onProgress?.Invoke(title, (double)(readingOrder.IndexOf(item) + 1) / total * 100);
+            onProgress?.Invoke(title, progressPercent);
         }
     }
 
@@ -107,43 +110,39 @@ public static partial class EpubExtractor
             HtmlDocument doc = new();
             doc.LoadHtml(content.Length > 3000 ? content[..3000] : content);
 
+            // ReSharper disable once ConstantNullCoalescingCondition - SelectSingleNode CAN return null
             HtmlNode body = doc.DocumentNode.SelectSingleNode("//body") ?? doc.DocumentNode;
 
-            HtmlNode h1 = body.SelectSingleNode(".//h1");
-            if (h1 != null)
+            if (body.SelectSingleNode(".//h1") is { } h1)
             {
-                string h1Text = HtmlEntity.DeEntitize(h1.InnerText).Trim();
-                h1Text = NormalizeWhitespace().Replace(h1Text, " ");
+                string h1Text = NormalizeWhitespace().Replace(HtmlEntity.DeEntitize(h1.InnerText).Trim(), " ");
                 if (!string.IsNullOrWhiteSpace(h1Text) && !IsGenericTitle(h1Text))
                 {
                     return h1Text;
                 }
             }
 
-            HtmlNode h2 = body.SelectSingleNode(".//h2");
-            if (h2 != null)
+            if (body.SelectSingleNode(".//h2") is { } h2)
             {
-                string h2Text = HtmlEntity.DeEntitize(h2.InnerText).Trim();
-                h2Text = NormalizeWhitespace().Replace(h2Text, " ");
+                string h2Text = NormalizeWhitespace().Replace(HtmlEntity.DeEntitize(h2.InnerText).Trim(), " ");
                 if (!string.IsNullOrWhiteSpace(h2Text) && !IsGenericTitle(h2Text))
                 {
                     return h2Text;
                 }
             }
 
-            HtmlNode h3 = body.SelectSingleNode(".//h3");
-            if (h3 != null)
+            if (body.SelectSingleNode(".//h3") is { } h3)
             {
-                string h3Text = HtmlEntity.DeEntitize(h3.InnerText).Trim();
-                h3Text = NormalizeWhitespace().Replace(h3Text, " ");
+                string h3Text = NormalizeWhitespace().Replace(HtmlEntity.DeEntitize(h3.InnerText).Trim(), " ");
                 if (!string.IsNullOrWhiteSpace(h3Text) && !IsGenericTitle(h3Text))
                 {
                     return h3Text;
                 }
             }
         }
-        catch
+        catch (Exception)
         {
+            // Silently ignore HTML parsing errors - return null to fallback
         }
 
         return null;
@@ -196,14 +195,10 @@ public static partial class EpubExtractor
 
         List<HtmlNode> junkNodes = root.Descendants()
             .Where(n => n.Name is "script" or "style" or "head" or "nav" ||
-                        (n.Attributes["style"]?.Value?.Contains("display:none", StringComparison.OrdinalIgnoreCase) ??
-                         false) ||
-                        (n.Attributes["style"]?.Value
-                            ?.Contains("visibility:hidden", StringComparison.OrdinalIgnoreCase) ?? false) ||
-                        (n.Attributes["class"]?.Value?.Contains("hidden", StringComparison.OrdinalIgnoreCase) ?? false))
+                        IsHiddenNode(n))
             .ToList();
 
-        foreach (HtmlNode? node in junkNodes)
+        foreach (HtmlNode node in junkNodes)
         {
             node.Remove();
         }
@@ -313,6 +308,16 @@ public static partial class EpubExtractor
         {
             lines.RemoveRange(1, duplicateIndex);
         }
+    }
+
+    private static bool IsHiddenNode(HtmlNode n)
+    {
+        string style = n.GetAttributeValue("style", string.Empty);
+        string cssClass = n.GetAttributeValue("class", string.Empty);
+
+        return style.Contains("display:none", StringComparison.OrdinalIgnoreCase) ||
+               style.Contains("visibility:hidden", StringComparison.OrdinalIgnoreCase) ||
+               cssClass.Contains("hidden", StringComparison.OrdinalIgnoreCase);
     }
 
     [GeneratedRegex(@"\s+")]

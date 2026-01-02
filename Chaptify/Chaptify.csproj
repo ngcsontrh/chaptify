@@ -4,10 +4,21 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<PublishAot>true</PublishAot>
+		<OptimizationPreference>Speed</OptimizationPreference>
 		<PublishTrimmed>true</PublishTrimmed>
-		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<TrimMode>link</TrimMode>
 		<DebugType>none</DebugType>
 		<DebugSymbols>false</DebugSymbols>
+		<StackTraceSupport>false</StackTraceSupport>
+		<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+		<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+		<UseSystemResourceKeys>true</UseSystemResourceKeys>
+		<EventSourceSupport>false</EventSourceSupport>
+		<MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+		<IlcTrimMetadata>true</IlcTrimMetadata>
+		<TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+		<StripSymbols>true</StripSymbols>
 	</PropertyGroup>
 
 	<ItemGroup>
